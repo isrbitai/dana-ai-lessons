@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Level Up — שיעור AI ראשון</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d0d1a;
+      --card:    #13132a;
+      --card2:   #0f0f22;
+      --purple:  #8b5cf6;
+      --gold:    #d4af37;
+      --text:    #e2e8f0;
+      --muted:   #8899aa;
+      --success: #10b981;
+      --danger:  #ef4444;
+      --border:  #1e1e40;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Assistant', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 80px;
+    }
+
+    /* ─── HEADER ─── */
+    .header { text-align: center; margin-bottom: 36px; width: 100%; max-width: 660px; }
+    .header h1 {
+      font-size: 1.9rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--purple), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 8px;
+    }
+    .header p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ─── PROGRESS ─── */
+    .progress-wrap { width: 100%; max-width: 660px; margin-bottom: 32px; }
+    .progress-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+    .bar-bg { background: var(--card); border-radius: 999px; height: 7px; overflow: hidden; }
+    .bar-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--purple), var(--gold));
+      transition: width 0.5s ease;
+    }
+    .dots { display: flex; justify-content: space-between; margin-top: 12px; }
+    .dot {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--card); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+      transition: all 0.3s;
+    }
+    .dot.active { border-color: var(--purple); color: var(--purple); }
+    .dot.done   { background: var(--purple); border-color: var(--purple); color: #fff; }
+    /* FIX 7: dot labels */
+    .dot-names { display: flex; justify-content: space-between; margin-top: 6px; }
+    .dot-names span { width: 30px; text-align: center; font-size: 0.65rem; color: var(--muted); }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      padding: 32px 28px; width: 100%; max-width: 660px;
+    }
+
+    /* FIX 2: restore banner */
+    #restore-bar {
+      display: none;
+      background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.25);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
+      align-items: center; justify-content: space-between; gap: 12px;
+    }
+    #restore-bar.show { display: flex; }
+    #restore-bar p { font-size: 0.87rem; color: var(--text); line-height: 1.4; }
+    .rb-btns { display: flex; gap: 8px; flex-shrink: 0; }
+    .rb-btn {
+      background: var(--purple); color: #fff; border: none; border-radius: 7px;
+      padding: 7px 14px; font-size: 0.82rem; cursor: pointer; font-family: 'Assistant', sans-serif;
+      white-space: nowrap;
+    }
+    .rb-btn.outline { background: transparent; border: 1px solid rgba(139,92,246,.4); color: var(--purple); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(139,92,246,.12); color: var(--purple);
+      border: 1px solid rgba(139,92,246,.25); border-radius: 999px;
+      padding: 4px 14px; font-size: 0.78rem; font-weight: 600; margin-bottom: 16px;
+    }
+    .card h2 { font-size: 1.45rem; font-weight: 700; margin-bottom: 8px; }
+    .desc { color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin-bottom: 28px; }
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+    /* ─── QUIZ ─── */
+    .q-block { margin-bottom: 22px; }
+    .q-block p { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
+    .q-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .q-opt {
+      background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 18px; cursor: pointer; font-size: 0.88rem; color: var(--text);
+      font-family: 'Assistant', sans-serif; transition: border-color 0.2s, background 0.2s;
+    }
+    .q-opt:hover { border-color: var(--purple); }
+    .q-opt.correct { background: rgba(16,185,129,.12); border-color: var(--success); color: var(--success); }
+    .q-opt.wrong   { background: rgba(239,68,68,.08);  border-color: var(--danger);  color: var(--danger); }
+    .q-fb { display: none; margin-top: 9px; font-size: 0.83rem; padding: 9px 13px; border-radius: 8px; line-height: 1.5; }
+    .q-fb.show    { display: block; }
+    .q-fb.correct { background: rgba(16,185,129,.09); color: var(--success); }
+    .q-fb.wrong   { background: rgba(239,68,68,.07);  color: #f87171; }
+
+    /* ─── FORM ─── */
+    .form-group { margin-bottom: 20px; }
+    label.field-label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; }
+    .field-hint { font-size: 0.78rem; color: var(--muted); margin-bottom: 7px; }
+    textarea, input[type="text"] {
+      width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 11px 13px; color: var(--text); font-family: 'Assistant', sans-serif; font-size: 0.88rem;
+      resize: vertical; outline: none; direction: rtl; transition: border-color 0.2s;
+    }
+    textarea:focus, input[type="text"]:focus { border-color: var(--purple); }
+    /* FIX 6: inline field error */
+    textarea.err { border-color: var(--danger) !important; }
+    .field-error { font-size: 0.78rem; color: var(--danger); margin-top: 5px; display: none; }
+    .field-error.show { display: block; }
+
+    /* ─── PILLS ─── */
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--card2); border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 14px; cursor: pointer; font-size: 0.83rem; color: var(--muted);
+      user-select: none; transition: all 0.2s;
+    }
+    .pill input { display: none; }
+    .pill.on { border-color: var(--purple); color: var(--purple); background: rgba(139,92,246,.1); }
+
+    /* ─── OUTPUT BOX ─── */
+    .out-box { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 14px; display: none; }
+    .out-box.show { display: block; }
+    .out-box pre { white-space: pre-wrap; font-family: 'Assistant', sans-serif; font-size: 0.85rem; line-height: 1.75; color: var(--text); direction: rtl; }
+    .copy-btn {
+      margin-top: 12px; background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.25);
+      color: var(--purple); border-radius: 7px; padding: 7px 15px; font-size: 0.82rem;
+      cursor: pointer; font-family: 'Assistant', sans-serif; transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(139,92,246,.22); }
+    .copy-btn.done-copy { color: var(--success); border-color: var(--success); background: rgba(16,185,129,.1); }
+
+    /* FIX 4: go-do-it guidance box */
+    .go-do-it {
+      display: none; margin-top: 14px;
+      background: rgba(212,175,55,.06); border: 1px solid rgba(212,175,55,.2);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .go-do-it.show { display: block; }
+    .go-do-it .go-title { font-size: 0.85rem; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+    .go-do-it ol { padding-right: 18px; }
+    .go-do-it li { font-size: 0.83rem; color: var(--text); line-height: 1.9; }
+
+    /* ─── CHECKLIST ─── */
+    .cl-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--card2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 15px; margin-bottom: 9px; cursor: pointer; user-select: none; transition: all 0.3s;
+    }
+    .cl-item.checked { border-color: var(--success); background: rgba(16,185,129,.05); }
+    .cl-icon {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      margin-top: 1px; transition: all 0.3s;
+    }
+    .cl-item.checked .cl-icon { background: var(--success); border-color: var(--success); }
+    /* FIX 1: hide checkmark SVG until checked */
+    .cl-icon svg { opacity: 0; transition: opacity 0.2s; }
+    .cl-item.checked .cl-icon svg { opacity: 1; }
+    .cl-item p { font-size: 0.88rem; line-height: 1.5; color: var(--muted); transition: color 0.3s; }
+    .cl-item.checked p { color: var(--text); }
+
+    /* ─── BUTTONS ─── */
+    .btn-main {
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 14px 24px; font-size: 0.97rem; font-weight: 600;
+      cursor: pointer; width: 100%; font-family: 'Assistant', sans-serif;
+      margin-top: 24px; transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-main:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .btn-main:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-gen {
+      background: transparent; color: var(--purple); border: 1px solid rgba(139,92,246,.4);
+      border-radius: 9px; padding: 11px 20px; font-size: 0.9rem;
+      cursor: pointer; width: 100%; font-family: 'Assistant', sans-serif;
+      margin-top: 4px; transition: all 0.2s;
+    }
+    .btn-gen:hover { background: rgba(139,92,246,.08); }
+    .hint-txt { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 10px; line-height: 1.6; }
+
+    /* ─── SUCCESS ─── */
+    .success-wrap { text-align: center; padding: 12px 0; }
+    .success-icon {
+      width: 76px; height: 76px; background: linear-gradient(135deg, var(--purple), var(--gold));
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 22px;
+    }
+    .success-wrap h2 { font-size: 1.7rem; font-weight: 700; margin-bottom: 10px; }
+    .success-wrap .sub { color: var(--muted); font-size: 0.92rem; line-height: 1.7; margin-bottom: 24px; }
+    .wa-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #25d366; color: #fff; text-decoration: none; border-radius: 10px;
+      padding: 13px 26px; font-size: 0.97rem; font-weight: 600;
+      font-family: 'Assistant', sans-serif; transition: opacity 0.2s;
+    }
+    .wa-btn:hover { opacity: 0.88; }
+
+    /* ─── STAGE NAV (back / skip) ─── */
+    .stage-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 14px;
+    }
+    .nav-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 0.82rem; cursor: pointer; font-family: 'Assistant', sans-serif;
+      padding: 6px 2px; display: flex; align-items: center; gap: 5px;
+      transition: color 0.2s; user-select: none;
+    }
+    .nav-btn:hover:not(:disabled) { color: var(--text); }
+    .nav-btn:disabled { opacity: 0; pointer-events: none; }
+
+    /* ─── STAGES ─── */
+    .stage { display: none; }
+    .stage.active { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Level Up — שיעור AI ראשון</h1>
+  <p>5 משימות קצרות שהופכות את השיעור לכלים שתשתמשי בהם מחר</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span id="prog-label">שלב 1 מתוך 5</span>
+    <span id="prog-pct">20%</span>
+  </div>
+  <div class="bar-bg"><div class="bar-fill" id="bar" style="width:20%"></div></div>
+  <div class="dots">
+    <div class="dot active" id="d1">1</div>
+    <div class="dot" id="d2">2</div>
+    <div class="dot" id="d3">3</div>
+    <div class="dot" id="d4">4</div>
+    <div class="dot" id="d5">5</div>
+  </div>
+  <div class="dot-names">
+    <span>כלים</span>
+    <span>הגדרות</span>
+    <span>תמונה</span>
+    <span>פרויקט</span>
+    <span>ניסוי</span>
+  </div>
+</div>
+
+<div class="card">
+
+  <!-- FIX 2: restore banner (replaces confirm dialogs) -->
+  <div id="restore-bar">
+    <p id="restore-msg"></p>
+    <div class="rb-btns">
+      <button class="rb-btn" id="rb-yes"></button>
+      <button class="rb-btn outline" onclick="dismissRestore()">התחילי מחדש</button>
+    </div>
+  </div>
+
+  <!-- ══════════ STAGE 1: QUIZ -->
+  <div class="stage active" id="s1">
+    <div class="badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      שלב 1 — הכרת הכלים
+    </div>
+    <h2>לאיזה כלי הייית פונה?</h2>
+    <p class="desc">לכל תרחיש — בחרי את הכלי שמתאים. אחרי הבחירה מופיע הסבר.</p>
+    <div id="quiz"></div>
+    <button class="btn-main" id="q-next" disabled onclick="go()">ממשיכה לשלב הבא</button>
+  </div>
+
+  <!-- ══════════ STAGE 2: CUSTOM INSTRUCTIONS -->
+  <div class="stage" id="s2">
+    <div class="badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      שלב 2 — הגדרות אישיות
+    </div>
+    <h2>בואי נבנה את ה-Custom Instructions שלך</h2>
+    <p class="desc">ממלאים ← הדף בונה טקסט מוכן ← מדביקים ב-ChatGPT וב-Claude. פעם אחת, נשאר לתמיד.</p>
+
+    <div class="form-group">
+      <label class="field-label">מי את ומה את עושה?</label>
+      <div class="field-hint">משפט-שניים על עצמך ועל העסק</div>
+      <textarea id="ci-who" rows="3" placeholder="למשל: נומרולוגית ומטפלת, מלמדת קורסים ועובדת עם לקוחות פרטיים..."></textarea>
+      <div class="field-error" id="ci-who-err">נא למלא שדה זה לפני שממשיכים</div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">איך את רוצה שידבר אלייך?</label>
+      <div class="pill-group" id="pg-style">
+        <label class="pill" onclick="pr(this,'s')"><input type="radio" name="s" value="ישיר וענייני">ישיר וענייני</label>
+        <label class="pill" onclick="pr(this,'s')"><input type="radio" name="s" value="חברותי ונעים">חברותי ונעים</label>
+        <label class="pill" onclick="pr(this,'s')"><input type="radio" name="s" value="מקצועי ורשמי">מקצועי ורשמי</label>
+        <label class="pill" onclick="pr(this,'s')"><input type="radio" name="s" value="קצר ותכליתי">קצר ותכליתי</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">מה לא לעשות?</label>
+      <div class="pill-group" id="pg-dont">
+        <label class="pill" onclick="pc(this)"><input type="checkbox" value="לא להשתמש באמוג'ים">בלי אמוג'ים</label>
+        <label class="pill" onclick="pc(this)"><input type="checkbox" value="לא להחניף ולא להגיד שהרעיון מדהים">בלי חניפה</label>
+        <label class="pill" onclick="pc(this)"><input type="checkbox" value="לשאול שאלה אחת בכל פעם — לא כמה שאלות ביחד">שאלה אחת בכל פעם</label>
+        <label class="pill" onclick="pc(this)"><input type="checkbox" value="לא לתת תשובות ארוכות מדי — להיות תמציתי">תשובות קצרות</label>
+        <label class="pill" onclick="pc(this)"><input type="checkbox" value="לא לנחש — לשאול אם משהו לא ברור">בלי הנחות</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">עוד משהו שחשוב שידע עלייך <span style="color:var(--muted);font-weight:400">(אופציונלי)</span></label>
+      <textarea id="ci-extra" rows="2" placeholder="תחומי עניין, שפות, דרך העבודה שלך..."></textarea>
+    </div>
+
+    <button class="btn-gen" onclick="makeCI()">צרי לי את ה-Custom Instructions</button>
+
+    <div class="out-box" id="ci-box">
+      <pre id="ci-out"></pre>
+      <button class="copy-btn" onclick="cp('ci-out',this)">העתיקי את הטקסט</button>
+    </div>
+
+    <!-- FIX 4: go-and-come-back guidance -->
+    <div class="go-do-it" id="ci-go">
+      <p class="go-title">עכשיו — עשי את זה ב-3 דקות:</p>
+      <ol>
+        <li>פתחי ChatGPT בטאב חדש</li>
+        <li>לחצי על שמך למעלה ← Settings ← Personalization ← Custom Instructions</li>
+        <li>הדביקי את הטקסט בשדה ← שמרי</li>
+        <li>אותו דבר ב-Claude: שמך ← Settings ← כתבי בשדה "What would you like Claude to know"</li>
+        <li>חזרי לכאן ← לחצי "הדבקתי"</li>
+      </ol>
+    </div>
+
+    <button class="btn-main" id="ci-next" disabled onclick="go()">הדבקתי — ממשיכה לשלב הבא</button>
+  </div>
+
+  <!-- ══════════ STAGE 3: IMAGE PROMPT -->
+  <div class="stage" id="s3">
+    <div class="badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      שלב 3 — תמונה ראשונה
+    </div>
+    <h2>בואי נבנה Prompt לתמונה</h2>
+    <p class="desc">בוחרים ← הדף מרכיב Prompt מוכן ← מעתיקים ל-ChatGPT ← מקבלים תמונה. בלי לנחש מה לכתוב.</p>
+
+    <div class="form-group">
+      <label class="field-label">מה תרצי לראות בתמונה?</label>
+      <textarea id="img-sub" rows="2" placeholder="למשל: כרטיס נומרולוגי מיסטי עם מספרים זוהרים, או: אישה יושבת ומדיטטת עם אורות..."></textarea>
+      <div class="field-error" id="img-sub-err">נא לתאר מה את רוצה לראות</div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">סגנון</label>
+      <div class="pill-group">
+        <label class="pill" onclick="pr(this,'is')"><input type="radio" name="is" value="ריאליסטי ומפורט">ריאליסטי</label>
+        <label class="pill" onclick="pr(this,'is')"><input type="radio" name="is" value="מיסטי ורוחני">מיסטי</label>
+        <label class="pill" onclick="pr(this,'is')"><input type="radio" name="is" value="מינימליסטי ונקי">מינימליסטי</label>
+        <label class="pill" onclick="pr(this,'is')"><input type="radio" name="is" value="אנימציה ואיור">אנימציה</label>
+        <label class="pill" onclick="pr(this,'is')"><input type="radio" name="is" value="אמנות דיגיטלית">אמנות דיגיטלית</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">פלטת צבעים</label>
+      <div class="pill-group">
+        <label class="pill" onclick="pr(this,'ic')"><input type="radio" name="ic" value="זהב, שחור וסגול עמוק">זהב ושחור</label>
+        <label class="pill" onclick="pr(this,'ic')"><input type="radio" name="ic" value="כחול, סגול וכסף">כחול וסגול</label>
+        <label class="pill" onclick="pr(this,'ic')"><input type="radio" name="ic" value="גוונים חמים ואדמתיים">גוונים חמים</label>
+        <label class="pill" onclick="pr(this,'ic')"><input type="radio" name="ic" value="פסטל עדין">פסטל</label>
+        <label class="pill" onclick="pr(this,'ic')"><input type="radio" name="ic" value="שחור ולבן">שחור-לבן</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">אווירה</label>
+      <div class="pill-group">
+        <label class="pill" onclick="pr(this,'im')"><input type="radio" name="im" value="שקטה, עמוקה ורוחנית">שקטה ורוחנית</label>
+        <label class="pill" onclick="pr(this,'im')"><input type="radio" name="im" value="מסתורית ומושכת">מסתורית</label>
+        <label class="pill" onclick="pr(this,'im')"><input type="radio" name="im" value="חגיגית ומלאת אנרגיה">חגיגית</label>
+        <label class="pill" onclick="pr(this,'im')"><input type="radio" name="im" value="מקצועית ועסקית">מקצועית</label>
+      </div>
+    </div>
+
+    <button class="btn-gen" onclick="makePrompt()">בני לי את ה-Prompt</button>
+
+    <div class="out-box" id="img-box">
+      <pre id="img-out"></pre>
+      <button class="copy-btn" onclick="cp('img-out',this)">העתיקי את ה-Prompt</button>
+    </div>
+
+    <!-- FIX 4: go-and-come-back guidance -->
+    <div class="go-do-it" id="img-go">
+      <p class="go-title">עכשיו — עשי את זה:</p>
+      <ol>
+        <li>פתחי ChatGPT בטאב חדש</li>
+        <li>לחצי על + לצ'אט חדש ← בחרי "Create image"</li>
+        <li>הדביקי את ה-Prompt ← שלחי</li>
+        <li>חכי לתמונה — ואז חזרי לכאן ← לחצי "ממשיכה"</li>
+      </ol>
+    </div>
+
+    <button class="btn-main" id="img-next" disabled onclick="go()">ראיתי את התמונה — ממשיכה</button>
+  </div>
+
+  <!-- ══════════ STAGE 4: FIRST PROJECT -->
+  <div class="stage" id="s4">
+    <div class="badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      שלב 4 — פרויקט ראשון
+    </div>
+    <h2>יוצרת את הפרויקט הראשון שלך</h2>
+    <p class="desc">פרויקט = תיקייה שהצ'אט תמיד זוכר. לנומרולוגיה, לשיעורים, לספר. סמני כל שלב אחרי שעשית אותו בפועל — כל 5 נדרשים.</p>
+
+    <div id="cl">
+      <!-- FIX 1: SVG hidden via CSS until .checked -->
+      <div class="cl-item" id="cl1" onclick="ck(1)">
+        <div class="cl-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>פתחתי ChatGPT ולחצתי על <strong>New Project</strong> בסרגל הצד</p>
+      </div>
+      <div class="cl-item" id="cl2" onclick="ck(2)">
+        <div class="cl-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>נתתי לפרויקט <strong>שם שמתאר נושא שחשוב לי</strong></p>
+      </div>
+      <div class="cl-item" id="cl3" onclick="ck(3)">
+        <div class="cl-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>הכנסתי לפחות <strong>פיסת מידע אחת</strong> — טקסט, קובץ, או תיאור קצר</p>
+      </div>
+      <div class="cl-item" id="cl4" onclick="ck(4)">
+        <div class="cl-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p><strong>שאלתי שאלה</strong> בתוך הפרויקט</p>
+      </div>
+      <div class="cl-item" id="cl5" onclick="ck(5)">
+        <div class="cl-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>קיבלתי תשובה ו<strong>ראיתי שהוא מכיר את הקונטקסט</strong> שהכנסתי</p>
+      </div>
+    </div>
+
+    <button class="btn-main" id="cl-next" disabled onclick="go()">סיימתי — ממשיכה לשלב האחרון</button>
+  </div>
+
+  <!-- ══════════ STAGE 5: REFLECTION -->
+  <div class="stage" id="s5">
+    <div class="badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      שלב 5 — ניסוי לפני ואחרי
+    </div>
+    <h2>ניסוי אחד — לראות את ההבדל</h2>
+    <!-- FIX 5: added fallback for no old chat -->
+    <p class="desc">קחי שיחה ישנה שלא עבדה טוב — או בחרי נושא חדש שרלוונטי לך עכשיו. עשי את השיחה מחדש עם Custom Instructions ועם "תגידי לי מה הבנת" לפני שמתחילים. ואז חזרי לכאן וספרי מה השתנה.</p>
+
+    <div class="form-group">
+      <label class="field-label">מה ניסית לעשות? ומה לא עבד?</label>
+      <textarea id="r1" rows="3" placeholder="למשל: ביקשתי שיכתוב הסבר לשיעור ויצא יבש מדי, לא בסגנון שלי..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="field-label">מה עשית אחרת הפעם?</label>
+      <textarea id="r2" rows="3" placeholder="למשל: הגדרתי Custom Instructions, ביקשתי ממנו לספר לי מה הבין לפני שהתחיל..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="field-label">מה היה שונה בתוצאה?</label>
+      <textarea id="r3" rows="3" placeholder="למשל: הסגנון הרגיש הרבה יותר קרוב אליי..."></textarea>
+    </div>
+
+    <!-- FIX 3: disabled by default, enabled dynamically -->
+    <button class="btn-main" id="finish-btn" disabled onclick="finish()">סיימתי את כל 5 השלבים</button>
+    <p class="hint-txt">הכפתור נפתח אחרי שמלאי לפחות שניים מתוך שלושה שדות</p>
+  </div>
+
+  <!-- ══════════ SUCCESS -->
+  <div class="stage" id="s-done">
+    <div class="success-wrap">
+      <div class="success-icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>את בעשירון העליון.</h2>
+      <p class="sub">
+        עברת את כל 5 המשימות של שיעור 1.<br>
+        יש לך Custom Instructions מוכנות, Prompt לתמונה, ופרויקט ראשון שחי.<br><br>
+        רוב המשתמשים לא עשו שום דבר מהרשימה הזו.
+      </p>
+      <div class="divider"></div>
+      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:16px;">שלחי הודעה לישראל שסיימת.</p>
+      <!-- ISRAEL: החלף 972XXXXXXXXXX במספר הטלפון שלך (ספרות בלבד) -->
+      <a class="wa-btn" href="https://wa.me/9720526514471?text=%D7%A1%D7%99%D7%99%D7%9E%D7%AA%D7%99+%D7%90%D7%AA+%D7%9B%D7%9C+5+%D7%94%D7%9E%D7%A9%D7%99%D7%9E%D7%95%D7%AA+%D7%A9%D7%9C+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+1%21" target="_blank">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        ספרי לישראל שסיימת
+      </a>
+    </div>
+  </div>
+
+  <!-- global stage nav — always visible except on success -->
+  <div class="stage-nav" id="stage-nav">
+    <button class="nav-btn" id="btn-back" onclick="back()" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      שלב קודם
+    </button>
+    <button class="nav-btn" id="btn-skip" onclick="skip()">
+      דלגי על השלב
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+
+</div><!-- .card -->
+
+<script>
+// ═══════════════════ STATE
+let cur = 1;
+const checks = new Set();
+
+// ═══════════════════ QUIZ
+const Qs = [
+  { q: 'אני רוצה לבדוק מחירים של מוצר מכל האתרים ולקבל השוואה מסודרת',
+    opts: ['ChatGPT','Claude','Gemini'], ans: 0,
+    why: 'ChatGPT — ה-Deep Research שלו מצוין לחקירה כזו. עובר עשרות אתרים ומחזיר ניתוח עם לינקים.' },
+  { q: 'יש לי מסמך ארוך שכתבתי ואני רוצה ניתוח מעמיק של הסגנון שלי',
+    opts: ['ChatGPT','Claude','Gemini'], ans: 1,
+    why: 'Claude — הכי חזק בניתוח טקסטים ארוכים ובהבנת דקויות כתיבה. זה ה-DNA שלו.' },
+  { q: 'אני רוצה ליצור תמונה לפוסט — נושא רוחני ומיסטי',
+    opts: ['ChatGPT','Claude','Gemini'], ans: 0,
+    why: 'ChatGPT — מודל יצירת התמונות מובנה בתוכו, בלי כלי נוסף. תיאור אחד, תמונה מוכנה.' },
+  { q: 'אני רוצה לכתוב מייל ללקוח — מקצועי אבל בסגנון האישי שלי',
+    opts: ['ChatGPT','Claude','Gemini'], ans: 1,
+    why: 'Claude — כתיבה שמרגישה אנושית היא החוזק שלו. במיוחד כשנתת לו דוגמאות מהסגנון שלך.' }
+];
+let answered = {};
+
+function buildQuiz() {
+  const el = document.getElementById('quiz');
+  Qs.forEach((q, i) => {
+    el.innerHTML += `
+      <div class="q-block" id="qb${i}">
+        <p>${i+1}. ${q.q}</p>
+        <div class="q-options">
+          ${q.opts.map((o,j)=>`<button class="q-opt" id="qo${i}_${j}" onclick="ans(${i},${j})">${o}</button>`).join('')}
+        </div>
+        <div class="q-fb" id="qf${i}"></div>
+      </div>`;
+  });
+}
+
+function ans(qi, oi) {
+  if (answered[qi] !== undefined) return;
+  answered[qi] = oi;
+  const q = Qs[qi];
+  const ok = oi === q.ans;
+  document.getElementById(`qo${qi}_${oi}`).classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) document.getElementById(`qo${qi}_${q.ans}`).classList.add('correct');
+  q.opts.forEach((_,j) => {
+    const b = document.getElementById(`qo${qi}_${j}`);
+    b.style.cursor = 'default'; b.onclick = null;
+  });
+  const fb = document.getElementById(`qf${qi}`);
+  fb.textContent = q.why;
+  fb.className = `q-fb show ${ok ? 'correct' : 'wrong'}`;
+  if (Object.keys(answered).length === Qs.length)
+    document.getElementById('q-next').disabled = false;
+}
+
+// ═══════════════════ PILLS
+function pr(el, name) {
+  document.querySelectorAll(`[name="${name}"]`).forEach(r => r.closest('.pill').classList.remove('on'));
+  el.classList.add('on');
+  el.querySelector('input').checked = true;
+}
+function pc(el) {
+  el.classList.toggle('on');
+  el.querySelector('input').checked = el.classList.contains('on');
+}
+function rv(name) {
+  const el = document.querySelector(`[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+function cv(gid) {
+  return [...document.querySelectorAll(`#${gid} input:checked`)].map(e => e.value);
+}
+
+// ═══════════════════ CUSTOM INSTRUCTIONS
+function makeCI() {
+  const who = document.getElementById('ci-who').value.trim();
+  // FIX 6: inline error
+  if (!who) {
+    document.getElementById('ci-who').classList.add('err');
+    document.getElementById('ci-who-err').classList.add('show');
+    document.getElementById('ci-who').focus();
+    return;
+  }
+  document.getElementById('ci-who').classList.remove('err');
+  document.getElementById('ci-who-err').classList.remove('show');
+
+  const style = rv('s');
+  const donts = cv('pg-dont');
+  const extra = document.getElementById('ci-extra').value.trim();
+
+  let t = `מי אני:\n${who}\n\n`;
+  if (style) t += `סגנון:\nדברי אליי בצורה ${style}.\n\n`;
+  t += `לפני שאתה עונה:\nוודא שהבנת — כתוב שורה קצרה שמסכמת את מה שהבנת, ואז תן תשובה.\nאם משהו לא ברור, שאל שאלה אחת.\n\n`;
+  if (donts.length) t += `מה לא לעשות:\n${donts.map(d=>`• ${d}`).join('\n')}\n\n`;
+  t += `כשמדברים עסקים — תהיה מדויק ותכליתי.\nכשמשוחחים בצורה פתוחה — תענה בצורה טבעית.\n`;
+  if (extra) t += `\nדברים שחשוב שתדע:\n${extra}`;
+
+  document.getElementById('ci-out').textContent = t;
+  document.getElementById('ci-box').classList.add('show');
+  document.getElementById('ci-go').classList.add('show'); // FIX 4
+  document.getElementById('ci-next').disabled = false;
+}
+
+// ═══════════════════ IMAGE PROMPT
+function makePrompt() {
+  const sub = document.getElementById('img-sub').value.trim();
+  // FIX 6: inline error
+  if (!sub) {
+    document.getElementById('img-sub').classList.add('err');
+    document.getElementById('img-sub-err').classList.add('show');
+    document.getElementById('img-sub').focus();
+    return;
+  }
+  document.getElementById('img-sub').classList.remove('err');
+  document.getElementById('img-sub-err').classList.remove('show');
+
+  const style  = rv('is'), colors = rv('ic'), mood = rv('im');
+  let p = `צור תמונה של: ${sub}.`;
+  if (style)  p += ` סגנון: ${style}.`;
+  if (colors) p += ` פלטת צבעים: ${colors}.`;
+  if (mood)   p += ` אווירה: ${mood}.`;
+  p += ` רזולוציה גבוהה, פרטים עשירים, קומפוזיציה מאוזנת.`;
+
+  document.getElementById('img-out').textContent = p;
+  document.getElementById('img-box').classList.add('show');
+  document.getElementById('img-go').classList.add('show'); // FIX 4
+  document.getElementById('img-next').disabled = false;
+}
+
+// ═══════════════════ COPY
+function cp(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+    btn.textContent = 'הועתק!';
+    btn.classList.add('done-copy');
+    setTimeout(() => {
+      btn.textContent = id === 'ci-out' ? 'העתיקי את הטקסט' : 'העתיקי את ה-Prompt';
+      btn.classList.remove('done-copy');
+    }, 2200);
+  });
+}
+
+// ═══════════════════ CHECKLIST (FIX 1 applied via CSS)
+function ck(n) {
+  const item = document.getElementById(`cl${n}`);
+  item.classList.contains('checked') ? checks.delete(n) : checks.add(n);
+  item.classList.toggle('checked');
+  document.getElementById('cl-next').disabled = checks.size < 5;
+}
+
+// ═══════════════════ STAGE 5 VALIDATION (FIX 3)
+function watchReflection() {
+  const filled = ['r1','r2','r3'].filter(id => document.getElementById(id).value.trim()).length;
+  document.getElementById('finish-btn').disabled = filled < 2;
+}
+['r1','r2','r3'].forEach(id => {
+  // wire up after DOM ready — see init
+});
+
+function finish() {
+  try { localStorage.setItem('dl1','done'); } catch(e){}
+  show('done');
+  updateBar(5, true);
+}
+
+// ═══════════════════ NAVIGATION
+function go() {
+  if (cur < 5) { cur++; show(cur); updateBar(cur, false); }
+}
+
+function back() {
+  if (cur > 1) { cur--; show(cur); updateBar(cur, false); }
+}
+
+function skip() {
+  if (cur < 5) {
+    cur++; show(cur); updateBar(cur, false);
+  } else {
+    try { localStorage.setItem('dl1','done'); } catch(e){}
+    show('done'); updateBar(5, true);
+  }
+}
+
+function updateNav(n) {
+  const nav  = document.getElementById('stage-nav');
+  const back = document.getElementById('btn-back');
+  const skip = document.getElementById('btn-skip');
+  if (n === 'done') { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  back.disabled = (n === 1);
+  skip.disabled = false;
+}
+
+function show(n) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.getElementById(n === 'done' ? 's-done' : `s${n}`).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  updateNav(n);
+  try { if (n !== 'done') localStorage.setItem('dl1_stage', n); } catch(e){}
+}
+
+function updateBar(stage, done) {
+  const pct = done ? 100 : Math.round(stage/5*100);
+  document.getElementById('bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = done ? 'הושלם!' : `שלב ${stage} מתוך 5`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  for (let i=1; i<=5; i++) {
+    const d = document.getElementById(`d${i}`);
+    d.className = 'dot';
+    if (done || i < stage) d.classList.add('done');
+    else if (i === stage)  d.classList.add('active');
+  }
+}
+
+// ═══════════════════ RESTORE BANNER (FIX 2 — replaces confirm dialogs)
+function showRestoreBanner(msg, yesTxt, yesAction) {
+  document.getElementById('restore-msg').textContent = msg;
+  const yesBtn = document.getElementById('rb-yes');
+  yesBtn.textContent = yesTxt;
+  yesBtn.onclick = yesAction;
+  document.getElementById('restore-bar').classList.add('show');
+}
+
+function dismissRestore() {
+  document.getElementById('restore-bar').classList.remove('show');
+  try { localStorage.removeItem('dl1'); localStorage.removeItem('dl1_stage'); } catch(e){}
+  cur = 1; show(1); updateBar(1, false);
+}
+
+// ═══════════════════ INIT
+buildQuiz();
+
+// Wire stage 5 validation
+['r1','r2','r3'].forEach(id => {
+  document.getElementById(id).addEventListener('input', watchReflection);
+});
+
+// Restore from localStorage — FIX 2
+try {
+  const savedStage = localStorage.getItem('dl1_stage');
+  const done       = localStorage.getItem('dl1');
+
+  if (done === 'done') {
+    showRestoreBanner(
+      'סיימת כבר את כל השלבים! רוצה לראות את מסך הסיום?',
+      'ראי סיום',
+      () => { document.getElementById('restore-bar').classList.remove('show'); show('done'); updateBar(5, true); }
+    );
+  } else if (savedStage && parseInt(savedStage) > 1) {
+    const s = parseInt(savedStage);
+    showRestoreBanner(
+      `יש לך התקדמות שמורה — שלב ${s} מתוך 5. להמשיך מאיפה שעצרת?`,
+      'המשיכי',
+      () => { document.getElementById('restore-bar').classList.remove('show'); cur = s; show(s); updateBar(s, false); }
+    );
+  }
+} catch(e){}
+</script>
+
+</body>
+</html>
